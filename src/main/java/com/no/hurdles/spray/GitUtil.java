@@ -41,7 +41,7 @@ public class GitUtil {
 
     public static void main(String[] args) throws Exception {
 
-        //repositoryInit();
+        repositoryInit();
 
         //System.out.println(checkout("testbranch"));
 
@@ -76,12 +76,18 @@ public class GitUtil {
      * @return
      */
     public static boolean repositoryInit() {
+
         try {
+            //清除旧文件
+            File file = new File(BaseDir + RepositoryName);
+            if (file.exists()){
+                deleteFile(file);
+            }
             Git.cloneRepository()
                .setURI(githubUrl)
                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(USER, PASSWORD))
                .setCloneAllBranches(true)
-               .setDirectory(new File(BaseDir+RepositoryName))
+               .setDirectory(file)
                .call();
             return true;
         } catch (Exception e) {
@@ -331,5 +337,28 @@ public class GitUtil {
         return resultList;
     }
 
-
+    /**
+     * 删除文件或者目录
+     *
+     * @param sourceFile 原文件 / 目录
+     * @date 2022/6/28 20:37
+     **/
+    private static void deleteFile(File sourceFile) {
+        // 判断参数
+        if (sourceFile == null) {
+            return;
+        }
+        // 判断是否是目录
+        if (sourceFile.isDirectory()) {
+            File[] childrenFile = sourceFile.listFiles();
+            if (childrenFile != null && childrenFile.length > 0) {
+                for (File childFile : childrenFile) {
+                    // 删除子级 文件 / 目录
+                    deleteFile(childFile);
+                }
+            }
+        }
+        // 删除 文件 / 目录 本身，不要用deleteOnExit()方法，不然无法删除目录
+        sourceFile.delete();
+    }
 }  
