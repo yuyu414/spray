@@ -42,12 +42,13 @@ public class GitUtil {
     public static void main(String[] args) throws Exception {
 
         //repositoryInit();
+
         //System.out.println(checkout("testbranch"));
-        //pullBranchToLocal();
-        //getOriginBranchList();
+
         //createLocalBranch("chenwei222");
         //deleteLocalBranch("chenwei");
-        //createOriginBranch("chenwei14");
+
+        //reateOriginBranch("kkkkkk");
         //deleteOriginBranch("chenwei666");
         System.out.println(getLocalBranchList());
         System.out.println("===========================");
@@ -90,34 +91,12 @@ public class GitUtil {
     }
 
     /**
-     * 拉取远程仓库文件
-     * @return
-     */
-    public static boolean pullBranchToLocal(){
-        try {
-            Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-            git.pull()
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(USER,PASSWORD))
-                .setRemote("origin")
-                .setRemoteBranchName("testbranch")
-                .call();
-            return true;
-        } catch (Exception e) {
-            log.error("pullBranchToLocal fail", e);
-            return false;
-        }
-    }
-
-    /**
      * 获取远端分支列表
      * @return
      */
     public static List<Ref> getOriginBranchList() throws IOException, GitAPIException {
         Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
         List<Ref> list = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
-//        for (Ref ref : list) {
-//            System.out.println("Branch-Before: " + ref + " " + ref.getName() + " " + ref.getObjectId().getName());
-//        }
         return list;
     }
 
