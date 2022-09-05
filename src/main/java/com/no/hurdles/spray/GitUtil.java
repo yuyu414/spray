@@ -17,7 +17,9 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.BranchTrackingStatus;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.FetchResult;
+import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.ReceiveCommand;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
@@ -27,10 +29,16 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * git操作工具
@@ -39,60 +47,98 @@ import java.util.List;
 @Slf4j
 public class GitUtil {
 
-    public static void main(String[] args) throws Exception {
-
-        repositoryInit();
-
-        //System.out.println(checkout("testbranch"));
-
-        //createLocalBranch("chenwei222");
-        //deleteLocalBranch("chenwei");
-
-        //reateOriginBranch("kkkkkk");
-        //deleteOriginBranch("chenwei666");
-        System.out.println(getLocalBranchList());
-        System.out.println("===========================");
-        System.out.println(getOriginBranchList());
-        System.out.println("===========================");
-
-    }
-
-    private final static String GIT = ".git";
     //定义本地git工作目录
     public static final String BaseDir = "D:/spraywork" + File.separator;
-    //.git文件路径
     public static final String RepositoryName = "demo";
-    //远程仓库地址
     public static final String githubUrl = "https://gitlab.com/1041579785/demo.git";
+    public static final String USER = "USER";
+    public static final String PASSWORD = "PASSWORD";
+
+    public static void main(String[] args) {
+        //repositoryInit(githubUrl, BaseDir + RepositoryName, USER, PASSWORD);
+
+        Git git = buildGit(BaseDir + RepositoryName);
+        System.out.println(getLocalBranchList(git));
+        System.out.println("===========================");
+        System.out.println(getOriginBranchList(git));
+        System.out.println("===========================");
+    }
+
+
 
     private static final String LOCAL_BRANCH_REF_PREFIX = "refs/remotes/origin/";
 
-    //操作git的用户名&密码
-    public static final String USER = "1041579785";
-    public static final String PASSWORD = "qwertyuiop";
-
     /**
      * 初始化仓库，只需要执行一次
+     * @param repositoryUrl  仓库地址
+     * @param localPath 本地初始化路径
+     * @param username git账号
+     * @param password git密码
      * @return
      */
-    public static boolean repositoryInit() {
-
+    public static Git repositoryInit(String repositoryUrl, String localPath, String username, String password) {
         try {
             //清除旧文件
-            File file = new File(BaseDir + RepositoryName);
+            File file = new File(localPath);
             if (file.exists()){
                 deleteFile(file);
             }
-            Git.cloneRepository()
-               .setURI(githubUrl)
-               .setCredentialsProvider(new UsernamePasswordCredentialsProvider(USER, PASSWORD))
+            return Git.cloneRepository()
+               .setURI(repositoryUrl)
+               .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
                .setCloneAllBranches(true)
                .setDirectory(file)
                .call();
-            return true;
         } catch (Exception e) {
             log.error("repositoryInit fail", e);
-            return false;
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /**
+     * 构建git对象
+     * @return
+     */
+    public static Git buildGit(String localPath) {
+        try {
+            return new Git(new FileRepository(localPath + File.separator + ".git"));
+        } catch (IOException e) {
+            log.error("buildGit fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /**
+     * 把当前分支提交
+     * @param git
+     * @param commitMessage
+     * @throws IOException
+     * @throws GitAPIException
+     */
+    public static RevCommit commit(Git git, String commitMessage) {
+        try {
+            return git.commit().setAll(true).setMessage(commitMessage).call();
+        } catch (GitAPIException e) {
+            log.error("commit fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /**
+     * 推送到远端
+     * @param git
+     * @throws IOException
+     * @throws GitAPIException
+     */
+    public static Iterable<PushResult> push(Git git, String username, String password) {
+        try {
+            return git.push()
+                    .setForce(true)
+                    .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                    .call();
+        } catch (GitAPIException e) {
+            log.error("push fail", e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -100,19 +146,26 @@ public class GitUtil {
      * 获取远端分支列表
      * @return
      */
-    public static List<Ref> getOriginBranchList() throws IOException, GitAPIException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        List<Ref> list = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
-        return list;
+    public static List<Ref> getOriginBranchList(Git git) {
+        try {
+            return git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
+        } catch (GitAPIException e) {
+            log.error("getOriginBranchList fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /**
      * 获取本地分支列表
      * @return
      */
-    public static List<Ref> getLocalBranchList() throws IOException, GitAPIException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        return git.branchList().call();
+    public static List<Ref> getLocalBranchList(Git git) {
+        try {
+            return git.branchList().call();
+        } catch (GitAPIException e) {
+            log.error("getLocalBranchList fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /**
@@ -121,15 +174,21 @@ public class GitUtil {
      * @throws IOException
      * @throws GitAPIException
      */
-    public static void createOriginBranch(String branchName) throws IOException, GitAPIException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        //创建本地分支
-        git.branchCreate().setName(branchName).setForce(true).call();
-        //推送远端分支
-        git.push()
-                .setRefSpecs(new RefSpec(branchName + ":" + branchName))// local:origin
-                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(USER,PASSWORD))
-                .call();
+    public static void createOriginBranch(Git git, String branchName, String username, String password) {
+
+        try {
+            //创建本地分支
+            git.branchCreate().setName(branchName).setForce(true).call();
+            //推送远端分支
+            git.push()
+                    .setRefSpecs(new RefSpec(branchName + ":" + branchName))// local:origin
+                    .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                    .call();
+        } catch (GitAPIException e) {
+            log.error("createOriginBranch fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
+
     }
 
     /**
@@ -139,9 +198,13 @@ public class GitUtil {
      * @throws IOException
      * @throws GitAPIException
      */
-    public static Ref createLocalBranch(String branchName) throws IOException, GitAPIException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        return git.branchCreate().setName(branchName).setForce(true).call();
+    public static Ref createLocalBranch(Git git, String branchName) {
+        try {
+            return git.branchCreate().setName(branchName).setForce(true).call();
+        } catch (GitAPIException e) {
+            log.error("createLocalBranch fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /**
@@ -151,9 +214,16 @@ public class GitUtil {
      * @throws IOException
      * @throws GitAPIException
      */
-    public static void deleteOriginBranch(String branchName) throws IOException, GitAPIException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        git.push().setRefSpecs(new RefSpec(":refs/heads/" + branchName)).setCredentialsProvider(new UsernamePasswordCredentialsProvider(USER, PASSWORD)).call();
+    public static Iterable<PushResult> deleteOriginBranch(Git git, String branchName, String username, String password){
+        try {
+            return git.push()
+                    .setRefSpecs(new RefSpec(":refs/heads/" + branchName))
+                    .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                    .call();
+        } catch (GitAPIException e) {
+            log.error("deleteOriginBranch fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /**
@@ -163,26 +233,23 @@ public class GitUtil {
      * @throws IOException
      * @throws GitAPIException
      */
-    public static List<String> deleteLocalBranch(String branchName) throws IOException, GitAPIException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        return git.branchDelete().setBranchNames(branchName).call();
+    public static List<String> deleteLocalBranch(Git git, String branchName) {
+        try {
+            return git.branchDelete().setBranchNames(branchName).setForce(true).call();
+        } catch (GitAPIException e) {
+            log.error("deleteLocalBranch fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /**
-     *
-     * <p>
-     * Description:判断本地分支名是否存在
-     * </p>
-     *
+     * 判断本地分支名是否存在
+     * @param git
      * @param branchName
      * @return
-     * @throws GitAPIException
-     * @author wgs
-     * @date 2019年7月20日 下午2:49:46
-     *
      */
-    public static boolean branchNameExist(String branchName) throws GitAPIException, IOException {
-        List<Ref> refs = getLocalBranchList();
+    public static boolean localBranchIsExist(Git git, String branchName) {
+        List<Ref> refs = getLocalBranchList(git);
         for (Ref ref : refs) {
             if (ref.getName().contains(branchName)) {
                 return true;
@@ -193,116 +260,102 @@ public class GitUtil {
 
     /**
      * check分支到本地
-     * @param label
+     * @param git
+     * @param branchName
      * @return
-     * @throws GitAPIException
-     * @throws IOException
      */
-    public static Ref checkout(String label) throws GitAPIException, IOException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        CheckoutCommand checkout = git.checkout();
-        if (shouldTrack(git, label)) {
-            checkout.setCreateBranch(true)
-                    .setName(label)
-                    .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
-                    .setStartPoint("origin/" + label);
-        } else {
-            checkout.setName(label);
-        }
-        return checkout.call();
-    }
+    public static Ref checkout(Git git, String branchName) {
 
-    private static boolean containsBranch(Git git, String label, ListBranchCommand.ListMode listMode) throws GitAPIException {
-        ListBranchCommand command = git.branchList();
-        if (listMode != null) {
-            command.setListMode(listMode);
-        }
-        List<Ref> branches = command.call();
-        for (Ref ref : branches) {
-            if (ref.getName().endsWith("/" + label)) {
-                return true;
+        try {
+            CheckoutCommand checkout = git.checkout();
+            if (shouldTrack(git, branchName)) {
+                checkout.setCreateBranch(true)
+                        .setName(branchName)
+                        .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                        .setStartPoint("origin/" + branchName);
+            } else {
+                checkout.setName(branchName);
             }
+            return checkout.call();
+        } catch (GitAPIException e) {
+            log.error("checkout fail", e);
+            throw new RuntimeException(e.getMessage());
         }
-        return false;
     }
 
-    private static boolean isBranch(Git git, String label) throws GitAPIException {
-        return containsBranch(git, label, ListBranchCommand.ListMode.ALL);
-    }
-
-    private static boolean isLocalBranch(Git git, String label) throws GitAPIException {
-        return containsBranch(git, label, null);
-    }
-
-    private static boolean shouldTrack(Git git, String label) throws GitAPIException {
-        return isBranch(git, label) && !isLocalBranch(git, label);
+    /**
+     * reset与远端分支保持一致
+     * @param git
+     * @param branchName
+     * @param remoteBranchName
+     * @return
+     */
+    public static Ref resetHard(Git git, String branchName, String remoteBranchName) {
+        try {
+            ResetCommand reset = git.reset();
+            reset.setRef(remoteBranchName);
+            reset.setMode(ResetCommand.ResetType.HARD);
+            Ref resetRef = reset.call();
+            if (resetRef != null) {
+                log.info("Reset branchName " + branchName + " to version " + resetRef.getObjectId());
+            }
+            return resetRef;
+        } catch (Exception e) {
+            log.error("resetHard fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /**
      * 合并分支
-     * @param label
+     * @param branchName
      */
-    private static void tryMerge(String label) throws IOException, GitAPIException {
-        Git git = new Git(new FileRepository(BaseDir + RepositoryName + File.separator + GIT));
-        if (isBranch(git, label)) {
+    public static void tryMerge(Git git, String branchName) {
+        if (isBranch(git, branchName)) {
             // merge results from fetch
-            merge(git, label);
-            if (!isClean(git, label)) {
-                log.warn("The local repository is dirty or ahead of origin. Resetting" + " it to origin/" + label + ".");
-                resetHard(git, label, LOCAL_BRANCH_REF_PREFIX + label);
+            MergeResult merge = merge(git, branchName);
+            log.info("tryMerge result={}", merge);
+            if (!isClean(git, branchName)) {
+                log.warn("The local repository is dirty or ahead of origin. Resetting" + " it to origin/" + branchName + ".");
+                resetHard(git, branchName, LOCAL_BRANCH_REF_PREFIX + branchName);
             }
         }
     }
 
-    private static MergeResult merge(Git git, String label) throws IOException, GitAPIException {
-        MergeCommand merge = git.merge();
-        merge.include(git.getRepository().findRef("origin/" + label));
-        MergeResult result = merge.call();
-        if (!result.getMergeStatus().isSuccessful()) {
-            log.warn("Merged from remote " + label + " with result " + result.getMergeStatus());
+    /**
+     * fench操作
+     * @param git
+     * @param branchName
+     * @param username
+     * @param password
+     * @return
+     */
+    public static FetchResult fetch(Git git, String branchName, String username, String password) {
+        try {
+            FetchCommand fetch = git.fetch();
+            fetch.setRemote("origin");
+            fetch.setTagOpt(TagOpt.FETCH_TAGS);
+            fetch.setRemoveDeletedRefs(true);
+            fetch.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
+            FetchResult result = fetch.call();
+            if (result.getTrackingRefUpdates() != null && result.getTrackingRefUpdates().size() > 0) {
+                log.info("Fetched for remote " + branchName + " and found " + result.getTrackingRefUpdates().size() + " updates");
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("fetch fail", e);
+            throw new RuntimeException(e.getMessage());
         }
-        return result;
-    }
-
-    private static Ref resetHard(Git git, String label, String ref) throws GitAPIException {
-        ResetCommand reset = git.reset();
-        reset.setRef(ref);
-        reset.setMode(ResetCommand.ResetType.HARD);
-        Ref resetRef = reset.call();
-        if (resetRef != null) {
-            log.info("Reset label " + label + " to version " + resetRef.getObjectId());
-        }
-        return resetRef;
-    }
-
-    private static boolean isClean(Git git, String label) throws GitAPIException, IOException {
-        StatusCommand status = git.status();
-        BranchTrackingStatus trackingStatus = BranchTrackingStatus.of(git.getRepository(), label);
-        boolean isBranchAhead = trackingStatus != null && trackingStatus.getAheadCount() > 0;
-        return status.call().isClean() && !isBranchAhead;
-    }
-
-    protected FetchResult fetch(Git git, String label) throws GitAPIException {
-        FetchCommand fetch = git.fetch();
-        fetch.setRemote("origin");
-        fetch.setTagOpt(TagOpt.FETCH_TAGS);
-        fetch.setRemoveDeletedRefs(true);
-        FetchResult result = fetch.call();
-        if (result.getTrackingRefUpdates() != null && result.getTrackingRefUpdates().size() > 0) {
-            log.info("Fetched for remote " + label + " and found " + result.getTrackingRefUpdates().size()
-                     + " updates");
-        }
-        return result;
     }
 
     /**
-     * Deletes local branches if corresponding remote branch was removed.
-     * @param trackingRefUpdates list of tracking ref updates
-     * @param git git instance
-     * @return list of deleted branches
+     * 如果删除了相应的远程分支，则删除本地分支
+     * @param git
+     * @param defaultBranchName 默认分支
+     * @param trackingRefUpdates
+     * @return
      */
-    private static Collection<String> deleteUntrackedLocalBranches(Collection<TrackingRefUpdate> trackingRefUpdates, Git git)
-            throws GitAPIException, IOException {
+    private static Collection<String> deleteUntrackedLocalBranches(Git git, String defaultBranchName, Collection<TrackingRefUpdate> trackingRefUpdates) {
         if (CollectionUtils.isEmpty(trackingRefUpdates)) {
             return Collections.emptyList();
         }
@@ -322,9 +375,14 @@ public class GitUtil {
         if (CollectionUtils.isEmpty(branchesToDelete)) {
             return Collections.emptyList();
         }
-        // make sure that deleted branch not a current one
-        checkout("当前分支");
-        return deleteBranches(git, branchesToDelete);
+        try {
+            //确保删除的分支不是当前分支
+            checkout(git, defaultBranchName);
+            return deleteBranches(git, branchesToDelete);
+        } catch (GitAPIException e) {
+            log.error("deleteUntrackedLocalBranches Failed to delete branches " + branchesToDelete, e);
+            return Collections.emptyList();
+        }
     }
 
     private static List<String> deleteBranches(Git git, Collection<String> branchesToDelete) throws GitAPIException {
@@ -361,4 +419,99 @@ public class GitUtil {
         // 删除 文件 / 目录 本身，不要用deleteOnExit()方法，不然无法删除目录
         sourceFile.delete();
     }
-}  
+
+    private static String getConventionalCommitMessage(RevCommit commit) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        // Prepare the pieces
+        final String justTheAuthorNoTime = commit.getAuthorIdent().toExternalString().split(">")[0] + ">";
+        final Instant commitInstant = Instant.ofEpochSecond(commit.getCommitTime());
+        final ZoneId zoneId = commit.getAuthorIdent().getTimeZone().toZoneId();
+        final ZonedDateTime authorDateTime = ZonedDateTime.ofInstant(commitInstant, zoneId);
+        final String gitDateTimeFormatString = "EEE MMM dd HH:mm:ss yyyy Z";
+        final String formattedDate = authorDateTime.format(DateTimeFormatter.ofPattern(gitDateTimeFormatString));
+        final String tabbedCommitMessage = Arrays.stream(commit.getFullMessage()
+                        .split("\\r?\\n")) // split it up by line
+                        .map(s -> "\t" + s + "\n") // add a tab on each line
+                        .collect(Collectors.joining()); // put it back together
+
+        // Put pieces together
+        stringBuilder
+                .append("commit ").append(commit.getName()).append("\n")
+                .append("Author:\t").append(justTheAuthorNoTime).append("\n")
+                .append("Date:\t").append(formattedDate).append("\n\n")
+                .append(tabbedCommitMessage);
+
+        return stringBuilder.toString();
+    }
+
+    /**
+     * 是否包含分支
+     * @param git
+     * @param branchName
+     * @param listMode
+     * @return
+     * @throws GitAPIException
+     */
+    private static boolean containsBranch(Git git, String branchName, ListBranchCommand.ListMode listMode) {
+
+        try {
+            ListBranchCommand command = git.branchList();
+            if (listMode != null) {
+                command.setListMode(listMode);
+            }
+            List<Ref> branches = command.call();
+            for (Ref ref : branches) {
+                if (ref.getName().endsWith("/" + branchName)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (GitAPIException e) {
+            log.error("containsBranch fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    private static boolean shouldTrack(Git git, String branchName) {
+        return isBranch(git, branchName) && !isLocalBranch(git, branchName);
+    }
+
+    private static boolean isBranch(Git git, String branchName) {
+        return containsBranch(git, branchName, ListBranchCommand.ListMode.ALL);
+    }
+
+    private static boolean isLocalBranch(Git git, String branchName) {
+        return containsBranch(git, branchName, null);
+    }
+
+    private static MergeResult merge(Git git, String branchName) {
+        try {
+            MergeCommand merge = git.merge();
+            merge.include(git.getRepository().findRef("origin/" + branchName));
+            merge.setCommit(true);
+            merge.setMessage("system merge: " + branchName + ">>>" + git.getRepository().getBranch());
+            MergeResult result = merge.call();
+            if (!result.getMergeStatus().isSuccessful()) {
+                log.warn("Merged from remote " + branchName + " with result " + result.getMergeStatus());
+            }
+            return result;
+        } catch (Exception e) {
+            log.error("merge fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    private static boolean isClean(Git git, String branchName) {
+        try {
+            StatusCommand status = git.status();
+            BranchTrackingStatus trackingStatus = BranchTrackingStatus.of(git.getRepository(), branchName);
+            boolean isBranchAhead = trackingStatus != null && trackingStatus.getAheadCount() > 0;
+            return status.call().isClean() && !isBranchAhead;
+        } catch (Exception e) {
+            log.error("isClean fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+}
