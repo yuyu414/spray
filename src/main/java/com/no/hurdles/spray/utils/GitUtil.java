@@ -1,4 +1,4 @@
-package com.no.hurdles.spray;
+package com.no.hurdles.spray.utils;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -50,18 +50,16 @@ public class GitUtil {
     //定义本地git工作目录
     public static final String BaseDir = "D:/spraywork" + File.separator;
     public static final String RepositoryName = "demo";
-    public static final String githubUrl = "https://gitlab.com/1041579785/demo.git";
+    public static final String githubUrl = "https://xxx.com/demo.git";
     public static final String USER = "USER";
     public static final String PASSWORD = "PASSWORD";
 
     public static void main(String[] args) {
-        //repositoryInit(githubUrl, BaseDir + RepositoryName, USER, PASSWORD);
-
-        Git git = buildGit(BaseDir + RepositoryName);
-        System.out.println(getLocalBranchList(git));
-        System.out.println("===========================");
-        System.out.println(getOriginBranchList(git));
-        System.out.println("===========================");
+//        repositoryInit(githubUrl, BaseDir + RepositoryName, USER, PASSWORD);
+//
+//        Git git = buildGit(BaseDir + RepositoryName);
+//        System.out.println(getLocalBranchList(git));
+//        System.out.println(getOriginBranchList(git));
     }
 
 
@@ -300,7 +298,7 @@ public class GitUtil {
             reset.setMode(ResetCommand.ResetType.HARD);
             Ref resetRef = reset.call();
             if (resetRef != null) {
-                log.info("Reset branchName " + branchName + " to version " + resetRef.getObjectId());
+                log.info("resetHard branchName " + branchName + " to version " + resetRef.getObjectId());
             }
             return resetRef;
         } catch (Exception e) {
@@ -316,8 +314,9 @@ public class GitUtil {
     public static void tryMerge(Git git, String branchName) {
         if (isBranch(git, branchName)) {
             // merge results from fetch
-            MergeResult merge = merge(git, branchName);
-            log.info("tryMerge result={}", merge);
+            MergeResult result = merge(git, branchName);
+            log.info("tryMerge result={}", GsonUtil.object2String(result));
+
             if (!isClean(git, branchName)) {
                 log.warn("The local repository is dirty or ahead of origin. Resetting" + " it to origin/" + branchName + ".");
                 resetHard(git, branchName, LOCAL_BRANCH_REF_PREFIX + branchName);
@@ -384,7 +383,7 @@ public class GitUtil {
             checkout(git, defaultBranchName);
             return deleteBranches(git, branchesToDelete);
         } catch (GitAPIException e) {
-            log.error("deleteUntrackedLocalBranches Failed to delete branches " + branchesToDelete, e);
+            log.error("deleteUntrackedLocalBranches Failed to delete branches " + GsonUtil.object2String(branchesToDelete), e);
             return Collections.emptyList();
         }
     }
