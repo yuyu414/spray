@@ -67,6 +67,7 @@ public class GitUtil {
 
 
     private static final String LOCAL_BRANCH_REF_PREFIX = "refs/remotes/origin/";
+    private static final int TIMEOUT = 20;
 
     /**
      * 初始化仓库，只需要执行一次
@@ -88,6 +89,7 @@ public class GitUtil {
                .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
                .setCloneAllBranches(true)
                .setDirectory(file)
+               .setTimeout(TIMEOUT)
                .call();
         } catch (Exception e) {
             log.error("repositoryInit fail", e);
@@ -135,6 +137,7 @@ public class GitUtil {
             return git.push()
                     .setForce(true)
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                    .setTimeout(TIMEOUT)
                     .call();
         } catch (GitAPIException e) {
             log.error("push fail", e);
@@ -336,6 +339,7 @@ public class GitUtil {
             fetch.setRemote("origin");
             fetch.setTagOpt(TagOpt.FETCH_TAGS);
             fetch.setRemoveDeletedRefs(true);
+            fetch.setTimeout(TIMEOUT);
             fetch.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
             FetchResult result = fetch.call();
             if (result.getTrackingRefUpdates() != null && result.getTrackingRefUpdates().size() > 0) {
