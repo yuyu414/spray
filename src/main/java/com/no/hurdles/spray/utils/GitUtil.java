@@ -10,6 +10,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.MergeCommand;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.ResetCommand;
 
 import org.eclipse.jgit.api.StatusCommand;
@@ -287,18 +288,17 @@ public class GitUtil {
     /**
      * reset与远端分支保持一致
      * @param git
-     * @param branchName
      * @param remoteBranchName
      * @return
      */
-    public static Ref resetHard(Git git, String branchName, String remoteBranchName) {
+    public static Ref resetHard(Git git, String remoteBranchName) {
         try {
             ResetCommand reset = git.reset();
             reset.setRef(remoteBranchName);
             reset.setMode(ResetCommand.ResetType.HARD);
             Ref resetRef = reset.call();
             if (resetRef != null) {
-                log.info("resetHard branchName " + branchName + " to version " + resetRef.getObjectId());
+                log.info("RESET 本地分支={} 为远端分支={} version={}", git.getRepository().getBranch(), GsonUtil.object2String(resetRef.getObjectId()));
             }
             return resetRef;
         } catch (Exception e) {
@@ -311,16 +311,18 @@ public class GitUtil {
      * 合并分支
      * @param branchName
      */
-    public static void tryMerge(Git git, String branchName) {
-        if (isBranch(git, branchName)) {
-            // merge results from fetch
+    public static MergeResult tryMerge(Git git, String branchName) {
+        try {
             MergeResult result = merge(git, branchName);
             log.info("tryMerge result={}", GsonUtil.object2String(result));
-
             if (!isClean(git, branchName)) {
-                log.warn("The local repository is dirty or ahead of origin. Resetting" + " it to origin/" + branchName + ".");
-                resetHard(git, branchName, LOCAL_BRANCH_REF_PREFIX + branchName);
+                log.warn("当前分支是脏分支，执行reset操作");
+                resetHard(git, LOCAL_BRANCH_REF_PREFIX + git.getRepository().getBranch());
             }
+            return result;
+        } catch (Exception e) {
+            log.error("tryMerge fail", e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
@@ -347,6 +349,28 @@ public class GitUtil {
             return result;
         } catch (Exception e) {
             log.error("fetch fail", e);
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /**
+     * fench操作
+     * @param git
+     * @param branchName
+     * @param username
+     * @param password
+     * @return
+     */
+    public static PullResult pull(Git git, String branchName, String username, String password) {
+        try {
+            return git.pull()
+                    .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
+                    .setRemote("origin")
+                    .setRemoteBranchName(branchName)
+                    .setTimeout(GitUtil.TIMEOUT)
+                    .call();
+        } catch (Exception e) {
+            log.error("pull fail", e);
             throw new RuntimeException(e.getMessage());
         }
     }
@@ -396,6 +420,16 @@ public class GitUtil {
                 .setForce(true);
         List<String> resultList = deleteBranchCommand.call();
         return resultList;
+    }
+
+    /**
+     * 判断是否为分支
+     * @param git
+     * @param branchName
+     * @return
+     */
+    public static boolean isBranch(Git git, String branchName) {
+        return containsBranch(git, branchName, ListBranchCommand.ListMode.ALL);
     }
 
     /**
@@ -480,10 +514,6 @@ public class GitUtil {
         return isBranch(git, branchName) && !isLocalBranch(git, branchName);
     }
 
-    private static boolean isBranch(Git git, String branchName) {
-        return containsBranch(git, branchName, ListBranchCommand.ListMode.ALL);
-    }
-
     private static boolean isLocalBranch(Git git, String branchName) {
         return containsBranch(git, branchName, null);
     }
@@ -496,7 +526,7 @@ public class GitUtil {
             merge.setMessage("system merge: " + branchName + ">>>" + git.getRepository().getBranch());
             MergeResult result = merge.call();
             if (!result.getMergeStatus().isSuccessful()) {
-                log.warn("Merged from remote " + branchName + " with result " + result.getMergeStatus());
+                log.warn(git.getRepository().getBranch() + " 合并 ---> " + branchName + " 失败, status=" + result.getMergeStatus());
             }
             return result;
         } catch (Exception e) {
