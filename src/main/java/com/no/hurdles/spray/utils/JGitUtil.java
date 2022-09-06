@@ -46,24 +46,49 @@ import java.util.stream.Collectors;
  * 更多api参考：https://github.com/centic9/jgit-cookbook
  */
 @Slf4j
-public class GitUtil {
+public class JGitUtil {
 
-    //定义本地git工作目录
-    public static final String BaseDir = "D:/spraywork" + File.separator;
-    public static final String RepositoryName = "demo";
-    public static final String githubUrl = "https://xxx.com/demo.git";
-    public static final String USER = "USER";
-    public static final String PASSWORD = "PASSWORD";
-
+    /**
+     * 把test分支合并到master,并推送到远端master
+     * @param args
+     */
     public static void main(String[] args) {
-//        repositoryInit(githubUrl, BaseDir + RepositoryName, USER, PASSWORD);
-//
-//        Git git = buildGit(BaseDir + RepositoryName);
-//        System.out.println(getLocalBranchList(git));
-//        System.out.println(getOriginBranchList(git));
+
+        String baseDir = "D:/spraywork" + File.separator;
+        String projectName = "projectName";
+        String gitUrl = "https://xxx.com/projectName.git";
+        String username = "username";
+        String password = "password";
+
+        //初始化项目
+        JGitUtil.repositoryInit(gitUrl, baseDir + projectName, username, password);
+
+        //构建git对象
+        Git git = JGitUtil.buildGit(baseDir + projectName);
+
+        //判断分支
+        if(!JGitUtil.isBranch(git, "test")){
+            throw new RuntimeException("分支不存在");
+        }
+
+        //checkout&pull
+        JGitUtil.checkout(git, "test");
+        JGitUtil.pull(git, "test", username, password);
+
+        JGitUtil.checkout(git, "master");
+        JGitUtil.pull(git, "master", username, password);
+
+        //合并
+        MergeResult result = JGitUtil.tryMerge(git, "test");
+        if (!result.getMergeStatus().isSuccessful()) {
+            //失败
+            System.out.println(result.getMergeStatus());
+            return;
+        }
+
+        //push
+        JGitUtil.push(git, username, password);
     }
-
-
 
     private static final String LOCAL_BRANCH_REF_PREFIX = "refs/remotes/origin/";
     private static final int TIMEOUT = 20;
@@ -367,7 +392,7 @@ public class GitUtil {
                     .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password))
                     .setRemote("origin")
                     .setRemoteBranchName(branchName)
-                    .setTimeout(GitUtil.TIMEOUT)
+                    .setTimeout(TIMEOUT)
                     .call();
         } catch (Exception e) {
             log.error("pull fail", e);
