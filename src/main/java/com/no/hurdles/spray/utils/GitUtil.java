@@ -298,7 +298,7 @@ public class GitUtil {
             reset.setMode(ResetCommand.ResetType.HARD);
             Ref resetRef = reset.call();
             if (resetRef != null) {
-                log.info("RESET 本地分支={} 为远端分支={} version={}", git.getRepository().getBranch(), GsonUtil.object2String(resetRef.getObjectId()));
+                log.info("RESET 本地分支={} 为远端分支={} version={}", git.getRepository().getBranch(), remoteBranchName, GsonUtil.object2String(resetRef.getObjectId()));
             }
             return resetRef;
         } catch (Exception e) {
