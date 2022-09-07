@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.no.hurdles.spray.dao.ProjectInfoMapper">
+  <resultMap id="BaseResultMap" type="com.no.hurdles.spray.model.ProjectInfo">
+    <id column="project_info_id" jdbcType="BIGINT" property="id" />
+    <result column="project_info_namespace" jdbcType="VARCHAR" property="namespace" />
+    <result column="project_info_name" jdbcType="VARCHAR" property="name" />
+    <result column="project_info_project_id" jdbcType="VARCHAR" property="projectId" />
+    <result column="project_info_project_url" jdbcType="VARCHAR" property="projectUrl" />
+    <result column="project_info_server_url" jdbcType="VARCHAR" property="serverUrl" />
+    <result column="project_info_access_token" jdbcType="VARCHAR" property="accessToken" />
+    <result column="project_info_status" jdbcType="TINYINT" property="status" />
+    <result column="project_info_create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="project_info_update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    project_info.id as project_info_id, project_info.namespace as project_info_namespace, 
+    project_info.`name` as `project_info_name`, project_info.project_id as project_info_project_id, 
+    project_info.project_url as project_info_project_url, project_info.server_url as project_info_server_url, 
+    project_info.access_token as project_info_access_token, project_info.`status` as `project_info_status`, 
+    project_info.create_time as project_info_create_time, project_info.update_time as project_info_update_time
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from project_info project_info
+    where project_info.id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from project_info
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.no.hurdles.spray.model.ProjectInfo" useGeneratedKeys="true">
+    insert into project_info (namespace, `name`, project_id, 
+      project_url, server_url, access_token, 
+      `status`, create_time, update_time
+      )
+    values (#{namespace,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{projectId,jdbcType=VARCHAR}, 
+      #{projectUrl,jdbcType=VARCHAR}, #{serverUrl,jdbcType=VARCHAR}, #{accessToken,jdbcType=VARCHAR}, 
+      #{status,jdbcType=TINYINT}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.no.hurdles.spray.model.ProjectInfo" useGeneratedKeys="true">
+    insert into project_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="namespace != null">
+        namespace,
+      </if>
+      <if test="name != null">
+        `name`,
+      </if>
+      <if test="projectId != null">
+        project_id,
+      </if>
+      <if test="projectUrl != null">
+        project_url,
+      </if>
+      <if test="serverUrl != null">
+        server_url,
+      </if>
+      <if test="accessToken != null">
+        access_token,
+      </if>
+      <if test="status != null">
+        `status`,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="namespace != null">
+        #{namespace,jdbcType=VARCHAR},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="projectId != null">
+        #{projectId,jdbcType=VARCHAR},
+      </if>
+      <if test="projectUrl != null">
+        #{projectUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="serverUrl != null">
+        #{serverUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="accessToken != null">
+        #{accessToken,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.no.hurdles.spray.model.ProjectInfo">
+    update project_info
+    <set>
+      <if test="namespace != null">
+        namespace = #{namespace,jdbcType=VARCHAR},
+      </if>
+      <if test="name != null">
+        `name` = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="projectId != null">
+        project_id = #{projectId,jdbcType=VARCHAR},
+      </if>
+      <if test="projectUrl != null">
+        project_url = #{projectUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="serverUrl != null">
+        server_url = #{serverUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="accessToken != null">
+        access_token = #{accessToken,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        `status` = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.no.hurdles.spray.model.ProjectInfo">
+    update project_info
+    set namespace = #{namespace,jdbcType=VARCHAR},
+      `name` = #{name,jdbcType=VARCHAR},
+      project_id = #{projectId,jdbcType=VARCHAR},
+      project_url = #{projectUrl,jdbcType=VARCHAR},
+      server_url = #{serverUrl,jdbcType=VARCHAR},
+      access_token = #{accessToken,jdbcType=VARCHAR},
+      `status` = #{status,jdbcType=TINYINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

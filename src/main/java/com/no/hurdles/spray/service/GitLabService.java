@@ -22,12 +22,16 @@ import java.util.UUID;
 @Service
 public class GitLabService {
 
+
+
     /**
      * 处理push回调事件
      * @param event
      */
     public void pushEvent(PushEvent event) throws GitLabApiException {
-        GitLabApi gitLabApi = new GitLabApi("https://gitlab.com", "");
+
+
+        GitLabApi gitLabApi = new GitLabApi("https://gitlab.com", "glpat-LfRa8fFB9LsFqTNm_Ap_");
         Project projects = gitLabApi.getProjectApi().getProject(39081833);
         System.out.println(GsonUtil.object2String(projects));
 

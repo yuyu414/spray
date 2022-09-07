@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.no.hurdles.spray.dao.MergeRulesMapper">
+  <resultMap id="BaseResultMap" type="com.no.hurdles.spray.model.MergeRules">
+    <id column="merge_rules_id" jdbcType="BIGINT" property="id" />
+    <result column="merge_rules_p_id" jdbcType="BIGINT" property="pId" />
+    <result column="merge_rules_source_branch" jdbcType="VARCHAR" property="sourceBranch" />
+    <result column="merge_rules_target_branch" jdbcType="VARCHAR" property="targetBranch" />
+    <result column="merge_rules_status" jdbcType="TINYINT" property="status" />
+    <result column="merge_rules_create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="merge_rules_update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    merge_rules.id as merge_rules_id, merge_rules.p_id as merge_rules_p_id, merge_rules.source_branch as merge_rules_source_branch, 
+    merge_rules.target_branch as merge_rules_target_branch, merge_rules.`status` as `merge_rules_status`, 
+    merge_rules.create_time as merge_rules_create_time, merge_rules.update_time as merge_rules_update_time
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from merge_rules merge_rules
+    where merge_rules.id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from merge_rules
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <insert id="insert" keyColumn="id" keyProperty="id" parameterType="com.no.hurdles.spray.model.MergeRules" useGeneratedKeys="true">
+    insert into merge_rules (p_id, source_branch, target_branch, 
+      `status`, create_time, update_time
+      )
+    values (#{pId,jdbcType=BIGINT}, #{sourceBranch,jdbcType=VARCHAR}, #{targetBranch,jdbcType=VARCHAR}, 
+      #{status,jdbcType=TINYINT}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" keyColumn="id" keyProperty="id" parameterType="com.no.hurdles.spray.model.MergeRules" useGeneratedKeys="true">
+    insert into merge_rules
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="pId != null">
+        p_id,
+      </if>
+      <if test="sourceBranch != null">
+        source_branch,
+      </if>
+      <if test="targetBranch != null">
+        target_branch,
+      </if>
+      <if test="status != null">
+        `status`,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="pId != null">
+        #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="sourceBranch != null">
+        #{sourceBranch,jdbcType=VARCHAR},
+      </if>
+      <if test="targetBranch != null">
+        #{targetBranch,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.no.hurdles.spray.model.MergeRules">
+    update merge_rules
+    <set>
+      <if test="pId != null">
+        p_id = #{pId,jdbcType=BIGINT},
+      </if>
+      <if test="sourceBranch != null">
+        source_branch = #{sourceBranch,jdbcType=VARCHAR},
+      </if>
+      <if test="targetBranch != null">
+        target_branch = #{targetBranch,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        `status` = #{status,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.no.hurdles.spray.model.MergeRules">
+    update merge_rules
+    set p_id = #{pId,jdbcType=BIGINT},
+      source_branch = #{sourceBranch,jdbcType=VARCHAR},
+      target_branch = #{targetBranch,jdbcType=VARCHAR},
+      `status` = #{status,jdbcType=TINYINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>
