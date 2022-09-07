@@ -3,6 +3,7 @@ package com.no.hurdles.spray;
 import com.no.hurdles.spray.utils.LarkTalkingUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -14,6 +15,12 @@ import org.springframework.web.client.RestTemplate;
  */
 @Configuration
 public class AppConfig {
+
+    @Value("lark.url")
+    private String larkUrl;
+
+    @Value("lark.secret")
+    private String larkSecret;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -34,8 +41,7 @@ public class AppConfig {
 
     @Bean
     public LarkTalkingUtil larkTalkingUtil(){
-        return new LarkTalkingUtil(restTemplate, "https://open.larksuite.com/open-apis/bot/v2/hook/6078b10e-ee36-49e7-a6d8-7753a199691f",
-                "hDuqBflnXcg9o1R39C1B0d");
+        return new LarkTalkingUtil(restTemplate, larkUrl, larkSecret);
     }
  
 }
