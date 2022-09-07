@@ -127,6 +127,12 @@ public class JGitUtil {
      */
     public static Git buildGit(String localPath) {
         try {
+
+            File lock = new File(localPath + File.separator, ".git/index.lock");
+            if (lock.exists()) {
+                log.info("删除 JGit lock file at " + lock);
+                lock.delete();
+            }
             return new Git(new FileRepository(localPath + File.separator + ".git"));
         } catch (IOException e) {
             log.error("buildGit fail", e);
