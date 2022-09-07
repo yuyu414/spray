@@ -15,12 +15,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-@Slf4j public class LarkTalkingUtil {
+@Slf4j
+public class LarkTalkingUtil {
 
     private RestTemplate restTemplate;
 
@@ -60,48 +57,6 @@ import java.util.Map;
             log.info("larkTalking result={}", new Gson().toJson(result));
         } catch (Throwable t) {
             log.error("sendText error ", t);
-        }
-    }
-
-    /**
-     * 发送富文本消息
-     * @param text
-     */
-    public void sendRichText(String title, String text) {
-
-        try {
-            Long timestamp = System.currentTimeMillis() / 1000;
-            String sign = genSign(secret, timestamp.toString());
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
-            Map<String, Object> map = new HashMap<>();
-            map.put("timestamp", timestamp.toString());
-            map.put("sign", sign);
-            map.put("msg_type", "text");
-
-            Map<String, Object> content = new HashMap<>();
-            Map<String, Object> post = new HashMap<>();
-            Map<String, Object> zh_cn = new HashMap<>();
-            zh_cn.put("title", title);
-            List<List<Object>> list = new ArrayList<>();
-            List<Object> eleList = new ArrayList<>();
-            Map<String, Object> eleMap = new HashMap<>();
-            eleMap.put("tag", "text");
-            eleMap.put("text", text);
-
-            eleList.add(eleMap);
-            list.add(eleList);
-            zh_cn.put("content", list);
-            post.put("zh_cn", zh_cn);
-            content.put("post", post);
-            map.put("content", content);
-
-            HttpEntity<String> requestEntity = new HttpEntity<>(new Gson().toJson(map), headers);
-            ResponseEntity<Object> result = restTemplate
-                    .exchange(url, HttpMethod.POST, requestEntity, Object.class);
-            log.info("sendRichText result={}", new Gson().toJson(result));
-        } catch (Throwable t) {
-            log.error("sendRichText error ", t);
         }
     }
 

@@ -5,6 +5,7 @@ import com.no.hurdles.spray.dao.ProjectInfoMapper;
 import com.no.hurdles.spray.model.MergeRules;
 import com.no.hurdles.spray.model.ProjectInfo;
 import com.no.hurdles.spray.utils.GsonUtil;
+import com.no.hurdles.spray.utils.LarkTalkingUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.gitlab4j.api.Constants;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 处理gitlab的事件
@@ -34,6 +36,9 @@ public class GitLabService {
 
     @Autowired
     private MergeRulesMapper mergeRulesMapper;
+
+    @Autowired
+    private LarkTalkingUtil larkTalkingUtil;
 
     /**
      * 处理push回调事件
@@ -85,6 +90,15 @@ public class GitLabService {
                 log.info("合并成功, projectId={}, merge iid={}", projectId, mergeRequest.getIid());
             } catch (Exception e) {
                 log.error("合并冲突, projectId={}, merge iid={}", projectId, mergeRequest.getIid(), e);
+
+                List<String> authorList = commits.stream()
+                        .map(x -> x.getAuthor().getName())
+                        .distinct()
+                        .collect(Collectors.toList());
+
+                larkTalkingUtil.sendText("merge冲突: " + mergeRequest.getSourceBranch() + " >>> " + mergeRequest.getTargetBranch() + "\n"//标题
+                                         +"Author: " + GsonUtil.object2String(authorList) + "\n"//提交人
+                                         +"提交日志: " + GsonUtil.object2String(commits));//日志
             }
         }
     }
