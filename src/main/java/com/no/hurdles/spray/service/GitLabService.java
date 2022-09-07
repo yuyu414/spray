@@ -1,16 +1,23 @@
 package com.no.hurdles.spray.service;
 
+import com.no.hurdles.spray.dao.MergeRulesMapper;
+import com.no.hurdles.spray.dao.ProjectInfoMapper;
+import com.no.hurdles.spray.model.MergeRules;
+import com.no.hurdles.spray.model.ProjectInfo;
 import com.no.hurdles.spray.utils.GsonUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.gitlab4j.api.Constants;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.MergeRequest;
 import org.gitlab4j.api.models.MergeRequestParams;
-import org.gitlab4j.api.models.Project;
+import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.PushEvent;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import java.util.List;
 
 /**
  * 处理gitlab的事件
@@ -22,7 +29,11 @@ import java.util.UUID;
 @Service
 public class GitLabService {
 
+    @Autowired
+    private ProjectInfoMapper projectInfoMapper;
 
+    @Autowired
+    private MergeRulesMapper mergeRulesMapper;
 
     /**
      * 处理push回调事件
@@ -30,25 +41,51 @@ public class GitLabService {
      */
     public void pushEvent(PushEvent event) throws GitLabApiException {
 
+        Integer projectId = event.getProject().getId();
 
-        GitLabApi gitLabApi = new GitLabApi("https://gitlab.com", "glpat-LfRa8fFB9LsFqTNm_Ap_");
-        Project projects = gitLabApi.getProjectApi().getProject(39081833);
-        System.out.println(GsonUtil.object2String(projects));
+        ProjectInfo projectInfo = projectInfoMapper.selectByProjectId(projectId.toString());
+        if(null == projectInfo){
+            throw new RuntimeException("项目不存在或已删除");
+        }
 
+        List<EventCommit> commits = event.getCommits();
+        String branchName = event.getRef().replace("refs/heads/", "");
 
-        MergeRequestParams params = new MergeRequestParams()
-                .withSourceBranch("chenwei777")
-                .withTargetBranch("master")
-                .withTitle(UUID.randomUUID().toString())
-                .withDescription("名称");
-        MergeRequest mergeRequest = gitLabApi.getMergeRequestApi()
-                .createMergeRequest(39081833, params);
-        System.out.println(mergeRequest.getId());
-        System.out.println(mergeRequest.getIid());
-        //
-        //        System.out.println("===");
-        MergeRequest acc = gitLabApi.getMergeRequestApi()
-                .acceptMergeRequest(39081833, mergeRequest.getIid());
-        System.out.println("-----");
+        List<MergeRules> list = mergeRulesMapper.selectByPidAndSourceBranch(projectInfo.getId(), branchName);
+
+        for (MergeRules mergeRules : list) {
+            GitLabApi gitLabApi = new GitLabApi(projectInfo.getServerUrl(), projectInfo.getAccessToken());
+
+            //查询是否已存在当前分支的合并
+            List<MergeRequest> mergeRequestList = gitLabApi.getMergeRequestApi().getMergeRequests(projectId, Constants.MergeRequestState.OPENED);
+
+            MergeRequest mergeRequest = null;
+            for (MergeRequest request : mergeRequestList) {
+                if(StringUtils.equals(mergeRules.getSourceBranch(),request.getSourceBranch())
+                   && StringUtils.equals(mergeRules.getTargetBranch(),request.getTargetBranch())){
+                    mergeRequest = request;
+                    break;
+                }
+            }
+
+            //没有则创建
+            if(null == mergeRequest){
+                MergeRequestParams params = new MergeRequestParams()
+                        .withSourceBranch(mergeRules.getSourceBranch())
+                        .withTargetBranch(mergeRules.getTargetBranch())
+                        .withTitle("System Merge Request-" + System.currentTimeMillis())
+                        .withDescription(GsonUtil.object2String(commits))
+                        .withSquash(true);
+                mergeRequest = gitLabApi.getMergeRequestApi().createMergeRequest(projectId, params);
+            }
+
+            try {
+                //发起合并
+                gitLabApi.getMergeRequestApi().acceptMergeRequest(projectId, mergeRequest.getIid());
+                log.info("合并成功, projectId={}, merge iid={}", projectId, mergeRequest.getIid());
+            } catch (Exception e) {
+                log.error("合并冲突, projectId={}, merge iid={}", projectId, mergeRequest.getIid(), e);
+            }
+        }
     }
 }
