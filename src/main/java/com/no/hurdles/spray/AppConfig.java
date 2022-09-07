@@ -16,10 +16,10 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class AppConfig {
 
-    @Value("lark.url")
+    @Value("${lark.url}")
     private String larkUrl;
 
-    @Value("lark.secret")
+    @Value("${lark.secret}")
     private String larkSecret;
 
     @Autowired
