@@ -96,7 +96,7 @@ public class GitLabService {
                         .distinct()
                         .collect(Collectors.toList());
 
-                larkTalkingUtil.sendText("merge冲突: " + mergeRequest.getSourceBranch() + " >>> " + mergeRequest.getTargetBranch() + "\n"//标题
+                larkTalkingUtil.sendText(projectInfo.getName() + " merge冲突: " + mergeRequest.getSourceBranch() + " >>> " + mergeRequest.getTargetBranch() + "\n"//标题
                                          +"Author: " + GsonUtil.object2String(authorList) + "\n"//提交人
                                          +"提交日志: " + GsonUtil.object2String(commits));//日志
             }
