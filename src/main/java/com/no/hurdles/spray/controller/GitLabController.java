@@ -32,11 +32,11 @@ public class GitLabController {
      */
     @PostMapping("event/push")
     public String pushEvent(@RequestBody PushEvent event) throws GitLabApiException {
-        String pushHook = this.request.getHeader("X-Gitlab-Event");
+        String pushHook = request.getHeader("X-Gitlab-Event");
         log.info("GitLab 推送事件, event={}, param={}", pushHook, GsonUtil.object2String(event));
         if(!StringUtils.equals("Push Hook", pushHook)){
             //非推送事件直接返回
-            return "pushHook";
+            return pushHook;
         }
         gitLabService.pushEvent(event);
         return "success";
