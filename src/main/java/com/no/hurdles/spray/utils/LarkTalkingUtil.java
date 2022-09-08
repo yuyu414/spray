@@ -1,6 +1,7 @@
 package com.no.hurdles.spray.utils;
 
 import com.google.gson.Gson;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.http.HttpEntity;
@@ -16,6 +17,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Slf4j
 public class LarkTalkingUtil {
 
@@ -61,6 +65,41 @@ public class LarkTalkingUtil {
     }
 
     /**
+     * 发送富文本消息
+     * @param title 标题
+     * @param list 富文本段落内容
+     *             参考链接：https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/im-v1/message/create_json#45e0953e
+     */
+    public void sendRichText(String title, List<List<Element>> list) {
+
+        try {
+            Long timestamp = System.currentTimeMillis() / 1000;
+            String sign = genSign(secret, timestamp.toString());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON_UTF8);
+            Map<String, Object> map = new HashMap<>();
+            map.put("timestamp", timestamp.toString());
+            map.put("sign", sign);
+            map.put("msg_type", "post");
+
+            Map<String, Object> content = new HashMap<>();
+            Map<String, Object> post = new HashMap<>();
+            Map<String, Object> zh_cn = new HashMap<>();
+            zh_cn.put("title", title);
+            zh_cn.put("content", list);
+            post.put("zh_cn", zh_cn);
+            content.put("post", post);
+            map.put("content", content);
+
+            HttpEntity<String> requestEntity = new HttpEntity<>(new Gson().toJson(map), headers);
+            ResponseEntity<Object> result = restTemplate.exchange(url, HttpMethod.POST, requestEntity, Object.class);
+            log.info("sendRichText result={}", new Gson().toJson(result));
+        } catch (Throwable t) {
+            log.error("sendRichText error ", t);
+        }
+    }
+
+    /**
      * 签名认证
      * @param secret
      * @param timestamp
@@ -81,4 +120,18 @@ public class LarkTalkingUtil {
         return new String(Base64.encodeBase64(signData));
     }
 
+    /**
+     * 富文本模型
+     * 参考链接：https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/im-v1/message/create_json#45e0953e
+     */
+    @Data
+    public static class Element {
+        private String tag;
+        private String text;
+
+        public Element(String tag, String text) {
+            this.tag = tag;
+            this.text = text;
+        }
+    }
 }

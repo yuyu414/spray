@@ -1,5 +1,6 @@
 package com.no.hurdles.spray.service;
 
+import com.google.common.collect.Lists;
 import com.no.hurdles.spray.dao.MergeRulesMapper;
 import com.no.hurdles.spray.dao.ProjectInfoMapper;
 import com.no.hurdles.spray.model.MergeRules;
@@ -17,7 +18,6 @@ import org.gitlab4j.api.webhook.EventCommit;
 import org.gitlab4j.api.webhook.PushEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -96,9 +96,13 @@ public class GitLabService {
                         .distinct()
                         .collect(Collectors.toList());
 
-                larkTalkingUtil.sendText(projectInfo.getName() + " merge冲突: " + mergeRequest.getSourceBranch() + " >>> " + mergeRequest.getTargetBranch() + "\n"//标题
-                                         +"Author: " + GsonUtil.object2String(authorList) + "\n"//提交人
-                                         +"提交日志: " + GsonUtil.object2String(commits));//日志
+                //发送提醒
+                List<List<LarkTalkingUtil.Element>> param = Lists.newArrayList(
+                        Lists.newArrayList(new LarkTalkingUtil.Element("text", "Author:" + GsonUtil.object2String(authorList))),//第一行提交人
+                        Lists.newArrayList(new LarkTalkingUtil.Element("text", "提交日志: " + GsonUtil.object2String(commits)))//第二行日志
+                );
+                larkTalkingUtil.sendRichText(projectInfo.getName() + " merge冲突: "
+                                             + mergeRequest.getSourceBranch() + " >>> " + mergeRequest.getTargetBranch(), param);
             }
         }
     }
